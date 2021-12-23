@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>VRCStatus Vouch Tree</title>
+    <meta name="viewport"
+        content="user-scalable=no, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, minimal-ui">
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/cytoscape-panzoom/2.5.3/cytoscape.js-panzoom.min.css"
+        integrity="sha512-MJrzp+ZGajx6AWCCCmjBWo0rPFavM1aBghVUSVVa0uYv8THryrtEygjj5r2rUg/ms33SkEC5xJ3E4ycCmxWdrw=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
+        integrity="sha512-SfTiTlX6kk+qitfevl/7LibUOeJWlt9rbyDn92a1DqWOw9vWG2MFoays0sgObmWazO5BQPiFucnnEAjpAB+/Sw=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        body {
+            font: 14px helvetica neue, helvetica, arial, sans-serif;
+        }
+
+        #cy {
+            height: 100%;
+            width: 100%;
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="cy"></div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"
+        integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.20.0/cytoscape.min.js"
+        integrity="sha512-cjmYAonfXK+azDmWqvnqq8xmygHRHqVI7S0zuRxQnvcYVeoakwthRX6pPKoXfG1oIjDvMUtteRV9PhQjJwKWxQ=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape-panzoom/2.5.3/cytoscape-panzoom.min.js"
+        integrity="sha512-coQmIYa/SKS8wyZw14FTLJhHmp5jqIO2WxyGhjAnLGdym6RsLX412wLO1hqnFifU0NacrJvlUukRJEwjRkm0Xg=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script type="text/javascript">
+        Array.prototype.shuffle = function () {
+            for (let i in this) {
+                if (this.hasOwnProperty(i)) {
+                    let index = Math.floor(Math.random() * i);
+                    [
+                        this[i],
+                        this[index]
+                    ] = [
+                            this[index],
+                            this[i]
+                        ];
+                }
+            }
+
+            return this;
+        }
+
+        $.getJSON('edges.json', function (edges) {
+            $.getJSON('nodes.json', function (nodes) {
+                let cy = cytoscape({
+                    container: document.getElementById('cy'),
+
+                    boxSelectionEnabled: true,
+
+                    elements: {
+                        nodes: nodes.shuffle(),
+                        edges: edges.map(edge => { edge.classes = "haystack"; return edge; }).shuffle(),
+                    },
+
+                    layout: {
+                        name: 'breadthfirst',
+                        directed: false,
+                        circle: true,
+                        spacingFactor: 3,
+                    },
+
+                    style: [
+                        {
+                            selector: 'node',
+                            style: {
+                                'label': 'data(label)',
+                                'height': 80,
+                                'width': 80,
+                                'background-fit': 'cover',
+                                'background-color': 'gray',
+                                'border-color': '#000',
+                                'border-width': 3,
+                                'border-opacity': 0.5,
+                            }
+                        },
+                        {
+                            selector: 'node:selected',
+                            style: {
+                                'background-color': '#003399',
+                                'border-color': '#003399',
+                                'border-width': 10,
+                                'border-opacity': 0.5,
+                            }
+                        },
+                        {
+                            selector: 'edge',
+                            style: {
+                                'width': 10,
+                                'line-color': 'gray',
+                                'target-arrow-color': 'gray',
+                                'target-arrow-shape': 'triangle',
+                                'curve-style': 'bezier',
+                                'opacity': 0.5,
+                            }
+                        },
+                        {
+                            selector: 'edge:selected',
+                            style: {
+                                'width': 10,
+                                'line-color': '#003399',
+                                'target-arrow-color': '#003399',
+                                'opacity': 1,
+                            }
+                        },
+                        {
+                            selector: '.invitee-node',
+                            style: {
+                                'background-color': 'orange',
+                            }
+                        },
+                        {
+                            selector: '.origin-edge',
+                            style: {
+                                'line-color': 'red',
+                                'target-arrow-color': 'red',
+                            }
+                        },
+                    ],
+
+                    ready: function (event) {
+                        window.cy = event.cy;
+                        window.cy.panzoom({});
+                    }
+                }); // cy init
+
+                let oldNode = undefined;
+                let oldIncomingEdges = undefined;
+                cy.on('tap', 'node', function () {
+                    var node = this;
+                    console.log(node);
+
+                    // Self
+                    if (oldNode) {
+                        oldNode.removeClass('invitee-node');
+                    }
+                    oldNode = node;
+                    node.addClass('invitee-node');
+
+                    // Incoming
+                    var incomingEdges = cy.edges().filter(el => el.target().anySame(node));
+                    if (oldIncomingEdges) {
+                        oldIncomingEdges.removeClass('origin-edge');
+                    }
+                    oldIncomingEdges = incomingEdges;
+                    console.log("incoming", incomingEdges);
+                    incomingEdges.addClass('origin-edge');
+
+                    // Outgoing
+                    var outgoingEdges = node.connectedEdges(el => !el.target().anySame(node));
+                    var outgoingNodes = outgoingEdges.targets();
+
+                    setTimeout(() => {
+                        outgoingEdges.forEach(edge => {
+                            edge.select()
+                        });
+                        outgoingNodes.forEach(node => {
+                            node.select();
+                        });
+                    }, 1);
+                }); // on tap
+            });
+        });
+    </script>
+</body>
+
+</html>
