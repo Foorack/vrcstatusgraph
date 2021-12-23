@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="utf-8">
-    <title>VRCStatus Vouch Graph v0.1</title>
+    <title>VRCStatus Vouch Graph v0.2</title>
     <meta name="viewport"
         content="user-scalable=no, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, minimal-ui">
     <link rel="stylesheet"
@@ -59,6 +59,9 @@
 
         $.getJSON('edges.json', function (edges) {
             $.getJSON('nodes.json', function (nodes) {
+                nodes.forEach(function (node) {
+                    node.style["background-image"] = node.style["background-image"].replace("https://cdn.discordapp.com/embed/avatars", 'img');
+                });
                 let cy = cytoscape({
                     container: document.getElementById('cy'),
 

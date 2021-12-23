@@ -120,18 +120,14 @@ async function main() {
     const client = await connectDiscord();
     console.log('Connected!');
 
-    const statusServer = client.guilds.resolve("819505244605906944");
-    const members = statusServer.members;
-    console.log(members);
-
     for (let i = 0; i < people.length; i++) {
         const person = people[i];
         console.log("Fetching user " + person.id);
         try {
-            const member = await members.fetch(person.id);
-            console.log(member);
-            person.name = member.displayName;
-            person.icon = member.user.displayAvatarURL();
+            const user = await client.users.fetch(person.id);
+            console.log(user);
+            person.name = user.username;
+            person.icon = user.displayAvatarURL();
         } catch (e) {
             console.log("Failed to fetch user " + person.id);
             person.name = "Unknown";
@@ -145,5 +141,5 @@ async function main() {
     client.destroy();
 }
 
-//main();
-writeEdges(invites);
+main();
+//writeEdges(invites);
